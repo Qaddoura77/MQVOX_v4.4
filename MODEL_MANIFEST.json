@@ -1,0 +1,51 @@
+{
+  "schema_version": 4,
+  "generated_for": "MQVOX Android v4 Arabic-English performance/accuracy checkpoint",
+  "assets": [
+    {
+      "component": "asr",
+      "name": "whisper.cpp ggml-small-q5_1.bin",
+      "runtime": "whisper.cpp v1.8.6",
+      "license": "MIT",
+      "sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+      "language_mode": "manual forced ar/en"
+    },
+    {
+      "component": "mt",
+      "name": "Helsinki-NLP/opus-mt-tc-big-ar-en",
+      "runtime": "CTranslate2 v4.7.2, INT8, Ruy ARM64",
+      "license": "CC-BY-4.0",
+      "direction": "Arabic to English",
+      "status": "OFFICIAL_UPSTREAM_MODEL_CONVERTED_DURING_BUILD"
+    },
+    {
+      "component": "mt",
+      "name": "Helsinki-NLP/opus-mt-tc-big-en-ar",
+      "runtime": "CTranslate2 v4.7.2, INT8, Ruy ARM64",
+      "license": "CC-BY-4.0",
+      "direction": "English to Arabic",
+      "target_prefix": ">>ara<<",
+      "status": "OFFICIAL_UPSTREAM_MODEL_CONVERTED_DURING_BUILD"
+    },
+    {
+      "component": "runtime",
+      "name": "CTranslate2",
+      "version": "v4.7.2",
+      "license": "MIT"
+    },
+    {
+      "component": "tokenizer",
+      "name": "SentencePiece",
+      "version": "v0.2.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "component": "tts",
+      "name": "Supertonic 3 INT8 via sherpa-onnx",
+      "runtime": "sherpa-onnx v1.13.4",
+      "license": "Model: OpenRAIL-M; runtime: Apache-2.0",
+      "languages": ["ar", "en"],
+      "status": "TEST_BUILD; LEGAL REVIEW REQUIRED BEFORE PROPRIETARY COMMERCIAL RELEASE"
+    }
+  ]
+}

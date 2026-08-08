@@ -1,0 +1,5 @@
+MQVOX v4.2 Android native-build fix
+
+Fixes CTranslate2 v4.7.2 compilation for Android API 28 by bypassing the Linux pthread_setaffinity_np path on Android. Android Bionic exposes pthread_setaffinity_np only at newer API levels. The normal CTranslate2 worker thread pool remains enabled; only optional CPU affinity pinning is disabled.
+
+Also retains the v4.1 Transformers 5 converter fix.

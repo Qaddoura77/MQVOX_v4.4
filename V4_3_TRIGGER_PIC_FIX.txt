@@ -1,0 +1,4 @@
+MQVOX v4.4 fixes two build-system issues found after v4.2:
+1. GitHub Actions event definition changed to an explicit push-to-main plus workflow_dispatch mapping.
+2. CTranslate2 and static native dependencies are explicitly compiled as position-independent code (-fPIC) for linking into the Android ARM64 shared JNI library.
+The workflow also uploads native-build.log on every run for easier diagnosis.

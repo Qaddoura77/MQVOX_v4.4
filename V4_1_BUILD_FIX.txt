@@ -1,0 +1,13 @@
+MQVOX v4.1 build fix
+
+Fixes the CTranslate2 Marian converter failure:
+MarianMTModel.__init__() got an unexpected keyword argument 'dtype'.
+
+Converter stack pinned to:
+- CTranslate2 4.7.2
+- Transformers 5.8.1
+- huggingface_hub 1.5.0
+- sentencepiece 0.2.1
+- torch 2.7.1 CPU
+
+No inference architecture change was made; this is a build-time compatibility fix.

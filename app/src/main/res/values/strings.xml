@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MQVOX</string>
+    <string name="privacy_claim">Your voice and translations stay on your device.</string>
+    <string name="mic">Microphone</string>
+</resources>
