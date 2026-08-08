@@ -1,0 +1,138 @@
+name: Build MQVOX v4.4 debug APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Verify repository layout
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f settings.gradle.kts
+          test -f app/build.gradle.kts
+          test -f app/src/main/cpp/mqvox_v4_jni.cpp
+          test -f app/src/main/cpp/CMakeLists.txt
+          test -f scripts/bootstrap_v4.sh
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build components
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1"
+
+      - name: Download and prepare MQVOX v4.4 offline stack
+        shell: bash
+        run: bash scripts/bootstrap_v4.sh
+
+      - name: Report bundled model sizes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          du -sh app/src/main/assets/models || true
+          find app/src/main/assets/models -type f -maxdepth 5 -printf '%s %p\n' | sort -nr | head -30 || true
+
+      - name: Verify native PIC configuration
+        shell: bash
+        run: |
+          set -euxo pipefail
+          grep -n "POSITION_INDEPENDENT_CODE ON" app/src/main/cpp/CMakeLists.txt
+          grep -n -- "-fPIC" app/src/main/cpp/CMakeLists.txt
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verify offline manifest policy
+        shell: bash
+        run: python3 scripts/verify_no_internet_permission.py
+
+      - name: Build MQVOX v4.4 ARM64 debug APK
+        shell: bash
+        run: |
+          set +e
+          gradle :app:assembleDebug --stacktrace --console=plain 2>&1 | tee native-build.log
+          STATUS=${PIPESTATUS[0]}
+
+          if [ "$STATUS" -ne 0 ]; then
+            echo
+            echo "============================================================"
+            echo "FIRST NATIVE BUILD FAILURE"
+            echo "============================================================"
+            FIRST_FAILED=$(grep -n -m1 "FAILED:" native-build.log | cut -d: -f1 || true)
+            if [ -n "$FIRST_FAILED" ]; then
+              START=$((FIRST_FAILED > 10 ? FIRST_FAILED - 10 : 1))
+              END=$((FIRST_FAILED + 100))
+              sed -n "${START},${END}p" native-build.log
+            else
+              grep -n -m30 -E "error:|fatal error:|undefined reference|ld.lld: error|ninja: build stopped" native-build.log || true
+            fi
+            echo "============================================================"
+          fi
+
+          exit "$STATUS"
+
+      - name: Upload native build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mqvox-v4.4-native-build-log
+          path: native-build.log
+          if-no-files-found: ignore
+
+      - name: Prepare APK and checksum
+        if: success()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk MQVOX-v4.4-debug.apk
+          sha256sum MQVOX-v4.4-debug.apk | tee MQVOX-v4.4-debug.apk.sha256
+          ls -lh MQVOX-v4.4-debug.apk
+
+      - name: Publish APK as GitHub Release asset
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          TAG="v4.4-build-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            MQVOX-v4.4-debug.apk \
+            MQVOX-v4.4-debug.apk.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "MQVOX v4.4 build ${GITHUB_RUN_NUMBER}" \
+            --notes "Arabic-English offline performance/accuracy checkpoint. v4.4 fixes workflow triggers and Android ARM64 PIC linking."
